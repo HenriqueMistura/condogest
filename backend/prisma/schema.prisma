@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Unidade {
+  id        String         @id @default(uuid())
+  bloco     String
+  numero    String
+  status    String         @default("OCUPADO") // OCUPADO, VAZIO
+  moradores Morador[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([bloco, numero])
+  @@map("unidades")
+}
+
+model Morador {
+  id        String    @id @default(uuid())
+  unidadeId String
+  nome      String
+  cpf       String    @unique
+  telefone  String?
+  email     String?
+  ativo     Boolean   @default(true)
+  asaasId   String?   @unique
+  unidade   Unidade   @relation(fields: [unidadeId], references: [id])
+  receitas  Receita[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("moradores")
+}
+
+model Receita {
+  id              String        @id @default(uuid())
+  moradorId       String
+  valor           Float
+  valorAtualizado Float?
+  dataVencimento  DateTime
+  dataPagamento   DateTime?
+  status          String        @default("PENDENTE") // PENDENTE, PAGO, ATRASADO, CANCELADO
+  tipo            String        // TAXA_CONDOMINIAL, MULTA, RESERVA_AREA
+  linkFatura      String?
+  transacaoIdApi  String?       @unique
+  morador         Morador       @relation(fields: [moradorId], references: [id])
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([status])
+  @@index([dataVencimento])
+  @@map("receitas")
+}
+
+model Despesa {
+  id             String        @id @default(uuid())
+  descricao      String
+  valor          Float
+  dataVencimento DateTime
+  dataPagamento  DateTime?
+  status         String        @default("PENDENTE") // PENDENTE, PAGO
+  fornecedor     String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("despesas")
+}
