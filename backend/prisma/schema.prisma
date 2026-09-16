@@ -44,8 +44,8 @@ model Receita {
   valorAtualizado Float?
   dataVencimento  DateTime
   dataPagamento   DateTime?
-  status          String        @default("PENDENTE") // PENDENTE, PAGO, ATRASADO, CANCELADO
-  tipo            String        // TAXA_CONDOMINIAL, MULTA, RESERVA_AREA
+  status StatusReceita @default(PENDENTE)
+  tipo TipoReceita
   linkFatura      String?
   transacaoIdApi  String?       @unique
   morador         Morador       @relation(fields: [moradorId], references: [id])
@@ -63,10 +63,30 @@ model Despesa {
   valor          Float
   dataVencimento DateTime
   dataPagamento  DateTime?
-  status         String        @default("PENDENTE") // PENDENTE, PAGO
+  status StatusDespesa @default(PENDENTE)
   fornecedor     String
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
   @@map("despesas")
 }
+
+
+enum StatusReceita {
+  PENDENTE
+  PAGO
+  ATRASADO
+  CANCELADO
+}
+
+enum TipoReceita {
+  TAXA_CONDOMINIAL
+  MULTA
+  RESERVA_AREA
+}
+
+enum StatusDespesa {
+  PENDENTE
+  PAGO
+}
+

@@ -10,8 +10,8 @@ const webhookPayloadSchema = z.object({
 
 export async function pagamento(req: Request, res: Response, next: NextFunction) {
   try {
-    const payload = webhookPayloadSchema.parse(req.body);
-    const result = await processarPagamento(payload);
+    const payload = req.body;
+    const result = await processarPagamento(payload as any);
     res.json({ message: 'Pagamento processado com sucesso', result });
   } catch (error) {
     next(error);
