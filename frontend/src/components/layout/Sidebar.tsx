@@ -1,8 +1,11 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Building2, Users, Receipt, CreditCard, AlertTriangle, LayoutDashboard } from 'lucide-react';
+import { Building2, Users, Receipt, CreditCard, AlertTriangle, LayoutDashboard, LogOut } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 export function Sidebar() {
+  const { logout, usuario } = useAuth();
+  
   const navItems = [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/unidades', label: 'Unidades', icon: Building2 },
@@ -45,8 +48,23 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <div className="p-4 border-t border-slate-700/50">
-        <div className="text-xs text-center text-slate-400">
+      <div className="p-4 border-t border-slate-700/50 space-y-4">
+        {usuario && (
+          <div className="flex items-center justify-between px-2">
+            <div className="text-sm">
+              <p className="font-medium text-slate-200">{usuario.nome}</p>
+              <p className="text-xs text-slate-400">{usuario.email}</p>
+            </div>
+            <button 
+              onClick={logout}
+              className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded-lg transition-colors"
+              title="Sair"
+            >
+              <LogOut size={20} />
+            </button>
+          </div>
+        )}
+        <div className="text-xs text-center text-slate-400 border-t border-slate-700/50 pt-4">
           <p>Mistura Tec &copy; {new Date().getFullYear()}</p>
           <p>v1.0.0</p>
         </div>
