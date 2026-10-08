@@ -3,8 +3,22 @@ export type StatusReceita = 'PENDENTE' | 'PAGO' | 'ATRASADO' | 'CANCELADO';
 export type TipoReceita = 'TAXA_CONDOMINIAL' | 'MULTA' | 'RESERVA_AREA';
 export type StatusDespesa = 'PENDENTE' | 'PAGO';
 
+export interface Condominio {
+  id: string;
+  nome: string;
+  cnpj?: string;
+  asaasApiKey?: string;
+  corIdentificacao: string;
+  ativo: boolean;
+  _count?: {
+    unidades: number;
+    moradores: number;
+  };
+}
+
 export interface Unidade {
   id: string;
+  condominioId: string;
   bloco: string;
   numero: string;
   status: StatusUnidade;
@@ -13,6 +27,7 @@ export interface Unidade {
 
 export interface Morador {
   id: string;
+  condominioId: string;
   unidadeId: string;
   nome: string;
   cpf: string;
@@ -25,6 +40,7 @@ export interface Morador {
 
 export interface Receita {
   id: string;
+  condominioId: string;
   moradorId: string;
   valor: number;
   valorAtualizado?: number;
@@ -39,6 +55,7 @@ export interface Receita {
 
 export interface Despesa {
   id: string;
+  condominioId: string;
   descricao: string;
   valor: number;
   dataVencimento: string;

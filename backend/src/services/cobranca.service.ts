@@ -1,10 +1,11 @@
 import { prisma } from '../lib/prisma.js';
 import { asaasService } from './asaas.service.js';
 
-export async function gerarCobrancasMensais() {
+export async function gerarCobrancasMensais(condominioId: string) {
   const unidades = await prisma.unidade.findMany({
     where: {
       status: 'OCUPADO',
+      condominioId,
     },
     include: {
       moradores: {
@@ -76,6 +77,7 @@ export async function gerarCobrancasMensais() {
           // 3. Salva no nosso banco de dados
           await prisma.receita.create({
             data: {
+              condominioId,
               moradorId: morador.id,
               valor: 500.00,
               tipo: 'TAXA_CONDOMINIAL',

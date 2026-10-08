@@ -6,5 +6,6 @@ const authRoutes = Router();
 
 authRoutes.post('/login', authController.login);
 authRoutes.get('/me', authMiddleware, authController.me);
+authRoutes.post('/impersonate/:condominioId', authMiddleware, authController.impersonate);
 
 export { authRoutes };

@@ -1,12 +1,29 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { Building2, Users, Receipt, CreditCard, AlertTriangle, LayoutDashboard, LogOut } from 'lucide-react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { Building2, Users, Receipt, CreditCard, AlertTriangle, LayoutDashboard, LogOut, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function Sidebar() {
-  const { logout, usuario } = useAuth();
+  const { logout, usuario, login } = useAuth();
+  const navigate = useNavigate();
   
-  const navItems = [
+  const isSuperAdmin = usuario?.role === 'SUPER_ADMIN';
+  const isAdminToken = !!localStorage.getItem('@CondoGest:adminToken');
+
+  const handleVoltarAdmin = () => {
+    const adminToken = localStorage.getItem('@CondoGest:adminToken');
+    const adminUser = localStorage.getItem('@CondoGest:adminUser');
+    if (adminToken && adminUser) {
+      login(adminToken, JSON.parse(adminUser));
+      localStorage.removeItem('@CondoGest:adminToken');
+      localStorage.removeItem('@CondoGest:adminUser');
+      navigate('/');
+    }
+  };
+
+  const navItems = isSuperAdmin ? [
+    { to: '/', label: 'Meus Clientes', icon: LayoutDashboard },
+  ] : [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/unidades', label: 'Unidades', icon: Building2 },
     { to: '/moradores', label: 'Moradores', icon: Users },
@@ -49,6 +66,16 @@ export function Sidebar() {
       </nav>
 
       <div className="p-4 border-t border-slate-700/50 space-y-4">
+        {isAdminToken && (
+          <button
+            onClick={handleVoltarAdmin}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600/10 text-red-500 hover:bg-red-600/20 hover:text-red-400 rounded-lg transition-colors font-medium text-sm"
+          >
+            <ArrowLeft size={16} />
+            Voltar para Admin
+          </button>
+        )}
+
         {usuario && (
           <div className="flex items-center justify-between px-2">
             <div className="text-sm">
@@ -56,7 +83,13 @@ export function Sidebar() {
               <p className="text-xs text-slate-400">{usuario.email}</p>
             </div>
             <button 
-              onClick={logout}
+              onClick={() => {
+                if (isAdminToken) {
+                  localStorage.removeItem('@CondoGest:adminToken');
+                  localStorage.removeItem('@CondoGest:adminUser');
+                }
+                logout();
+              }}
               className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded-lg transition-colors"
               title="Sair"
             >

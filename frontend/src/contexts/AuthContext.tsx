@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { Condominio } from '../types';
 
 interface Usuario {
   id: string;
   nome: string;
   email: string;
   role: string;
+  condominios?: Condominio[];
 }
 
 interface AuthContextType {

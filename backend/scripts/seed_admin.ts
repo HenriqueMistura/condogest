@@ -2,24 +2,57 @@ import { prisma } from '../src/lib/prisma.js';
 import bcrypt from 'bcryptjs';
 
 async function seedAdmin() {
-  const email = 'admin@condogest.com.br';
-  const senhaPlana = 'admin123'; // Você deve mudar essa senha depois!
+  // 1. Criar o Super Admin (Você)
+  const emailSuper = 'admin@misturatec.com.br';
+  const senhaSuper = 'mistura123';
 
-  const existe = await prisma.usuario.findUnique({ where: { email } });
+  let superAdmin = await prisma.usuario.findUnique({ where: { email: emailSuper } });
 
-  if (!existe) {
-    const senhaHash = await bcrypt.hash(senhaPlana, 10);
-    await prisma.usuario.create({
+  if (!superAdmin) {
+    const senhaHash = await bcrypt.hash(senhaSuper, 10);
+    superAdmin = await prisma.usuario.create({
       data: {
-        nome: 'Síndico Admin',
-        email,
+        nome: 'Mistura Tec (Super Admin)',
+        email: emailSuper,
         senha: senhaHash,
-        role: 'ADMIN'
+        role: 'SUPER_ADMIN'
       }
     });
-    console.log(`✅ Usuário administrador criado com sucesso! Email: ${email} | Senha: ${senhaPlana}`);
-  } else {
-    console.log('⚠️ Usuário administrador já existe.');
+    console.log(`✅ Super Admin criado! Email: ${emailSuper}`);
+  }
+
+  // 2. Criar o primeiro cliente: Condomínio Niko Baracati
+  let condominio = await prisma.condominio.findFirst({ where: { nome: 'Condomínio Niko Baracati' } });
+
+  if (!condominio) {
+    condominio = await prisma.condominio.create({
+      data: {
+        nome: 'Condomínio Niko Baracati',
+        cnpj: '00.000.000/0001-00',
+        asaasApiKey: process.env.ASAAS_API_KEY || ''
+      }
+    });
+    console.log(`✅ Condomínio ${condominio.nome} criado!`);
+  }
+
+  // 3. Criar o Síndico do Niko Baracati
+  const emailSindico = 'sindico@nikobaracati.com.br';
+  let sindico = await prisma.usuario.findUnique({ where: { email: emailSindico } });
+
+  if (!sindico) {
+    const senhaHash = await bcrypt.hash('sindico123', 10);
+    await prisma.usuario.create({
+      data: {
+        nome: 'Síndico Niko Baracati',
+        email: emailSindico,
+        senha: senhaHash,
+        role: 'SINDICO',
+        condominios: {
+          connect: [{ id: condominio.id }]
+        }
+      }
+    });
+    console.log(`✅ Síndico criado! Email: ${emailSindico}`);
   }
 }
 

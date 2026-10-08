@@ -5,10 +5,13 @@ import { FilePlus } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import { Receita } from '../types';
 import { api } from '../services/api';
+import { CondominioTag } from '../components/ui/CondominioTag';
+import { useAuth } from '../contexts/AuthContext';
 
 export function Receitas() {
   const [gerando, setGerando] = useState(false);
   const { data: receitas, loading, error, refetch } = useApi<Receita[]>('/receitas');
+  const { usuario } = useAuth();
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
@@ -16,17 +19,34 @@ export function Receitas() {
 
   const formatDate = (dateStr: string | null | undefined) => {
     if (!dateStr) return '-';
-    // Format YYYY-MM-DD to DD/MM/YYYY
     const d = new Date(dateStr);
-    // Add timezone offset correction if necessary, but simple toLocaleDateString works for now
     return d.toLocaleDateString('pt-BR', { timeZone: 'UTC' }); 
   };
 
   const handleGerarEmLote = async () => {
-    if (confirm('Deseja realmente gerar as cobranças em lote para todas as unidades ocupadas?')) {
+    // Se o usuário gerencia múltiplos, precisamos de um modal pra escolher qual.
+    // Como simplificação inicial, passamos o primeiro ou pedimos por select se houver mais de 1
+    const condominios = usuario?.condominios || [];
+    if (condominios.length === 0) return alert('Você não gerencia nenhum condomínio.');
+
+    let targetCondominioId = condominios[0].id;
+    
+    if (condominios.length > 1) {
+      const options = condominios.map((c, i) => `${i + 1} - ${c.nome}`).join('\n');
+      const response = prompt(`Você gerencia várias etapas. Digite o NÚMERO da etapa para gerar os boletos:\n${options}`);
+      if (!response) return;
+      const index = parseInt(response) - 1;
+      if (index >= 0 && index < condominios.length) {
+        targetCondominioId = condominios[index].id;
+      } else {
+        return alert('Seleção inválida.');
+      }
+    }
+
+    if (confirm('Deseja realmente gerar as cobranças em lote para todas as unidades ocupadas desta etapa?')) {
       setGerando(true);
       try {
-        await api.post('/receitas/gerar-lote', {});
+        await api.post('/receitas/gerar-lote', { condominioId: targetCondominioId });
         alert('Cobranças geradas com sucesso!');
         refetch();
       } catch (err) {
@@ -39,6 +59,7 @@ export function Receitas() {
 
   const columns: Column<Receita>[] = [
     { key: 'moradorId', title: 'Morador', render: (item) => <span className="font-medium text-slate-800">{item.morador?.nome || '-'}</span> },
+    { key: 'etapa', title: 'Etapa', render: (item) => <CondominioTag condominioId={item.condominioId} /> },
     { key: 'tipo', title: 'Tipo' },
     { key: 'valor', title: 'Valor Original', render: (item) => formatCurrency(item.valor) },
     { key: 'valorAtualizado', title: 'Valor Atualizado', render: (item) => item.valorAtualizado ? formatCurrency(item.valorAtualizado) : '-' },

@@ -7,98 +7,119 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Condominio {
+  id               String      @id @default(uuid())
+  nome             String
+  cnpj             String?
+  asaasApiKey      String?     // Chave do Asaas específica deste cliente
+  corIdentificacao String      @default("#3B82F6") // Cor no painel (Verde, Laranja, etc)
+  ativo            Boolean     @default(true)
+  
+  usuarios         Usuario[]   @relation("UsuarioCondominios")
+  unidades         Unidade[]
+  moradores        Morador[]
+  receitas         Receita[]
+  despesas         Despesa[]
+  
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@map("condominios")
+}
+
 model Usuario {
-  id        String   @id @default(uuid())
-  nome      String
-  email     String   @unique
-  senha     String   // Guardaremos a senha criptografada (hash)
-  role      String   @default("ADMIN")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String       @id @default(uuid())
+  nome         String
+  email        String       @unique
+  senha        String      
+  role         String       @default("SINDICO") // SUPER_ADMIN ou SINDICO
+  
+  // Um usuário pode gerenciar vários condomínios (ex: Síndico de 2 etapas)
+  condominios  Condominio[] @relation("UsuarioCondominios")
+  
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   @@map("usuarios")
 }
 
 model Unidade {
-  id        String         @id @default(uuid())
-  bloco     String
-  numero    String
-  status    String         @default("OCUPADO") // OCUPADO, VAZIO
-  moradores Morador[]
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  id           String      @id @default(uuid())
+  condominioId String
+  bloco        String
+  numero       String
+  status       String      @default("OCUPADO") // OCUPADO, VAZIO
+  
+  condominio   Condominio  @relation(fields: [condominioId], references: [id])
+  moradores    Morador[]
+  
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
-  @@unique([bloco, numero])
+  // Um bloco/numero só deve ser único DENTRO de um condomínio específico
+  @@unique([condominioId, bloco, numero])
   @@map("unidades")
 }
 
 model Morador {
-  id        String    @id @default(uuid())
-  unidadeId String
-  nome      String
-  cpf       String    @unique
-  telefone  String?
-  email     String?
-  ativo     Boolean   @default(true)
-  asaasId   String?   @unique
-  unidade   Unidade   @relation(fields: [unidadeId], references: [id])
-  receitas  Receita[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id           String      @id @default(uuid())
+  condominioId String
+  unidadeId    String
+  nome         String
+  cpf          String      @unique
+  telefone     String?
+  email        String?
+  ativo        Boolean     @default(true)
+  asaasId      String?     @unique
+  
+  condominio   Condominio  @relation(fields: [condominioId], references: [id])
+  unidade      Unidade     @relation(fields: [unidadeId], references: [id])
+  receitas     Receita[]
+  
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
   @@map("moradores")
 }
 
 model Receita {
-  id              String        @id @default(uuid())
+  id              String      @id @default(uuid())
+  condominioId    String
   moradorId       String
   valor           Float
   valorAtualizado Float?
   dataVencimento  DateTime
   dataPagamento   DateTime?
-  status StatusReceita @default(PENDENTE)
-  tipo TipoReceita
+  status          String      @default("PENDENTE") // PENDENTE, PAGO, ATRASADO, CANCELADO
+  tipo            String      // TAXA_CONDOMINIAL, MULTA, RESERVA_AREA
   linkFatura      String?
-  transacaoIdApi  String?       @unique
-  morador         Morador       @relation(fields: [moradorId], references: [id])
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  transacaoIdApi  String?     @unique
+  
+  condominio      Condominio  @relation(fields: [condominioId], references: [id])
+  morador         Morador     @relation(fields: [moradorId], references: [id])
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
-  @@index([status])
-  @@index([dataVencimento])
+  @@index([condominioId, status])
+  @@index([condominioId, dataVencimento])
   @@map("receitas")
 }
 
 model Despesa {
-  id             String        @id @default(uuid())
+  id             String      @id @default(uuid())
+  condominioId   String
   descricao      String
   valor          Float
   dataVencimento DateTime
   dataPagamento  DateTime?
-  status StatusDespesa @default(PENDENTE)
+  status         String      @default("PENDENTE") // PENDENTE, PAGO
   fornecedor     String
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  
+  condominio     Condominio  @relation(fields: [condominioId], references: [id])
+  
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
   @@map("despesas")
 }
-
-
-enum StatusReceita {
-  PENDENTE
-  PAGO
-  ATRASADO
-  CANCELADO
-}
-
-enum TipoReceita {
-  TAXA_CONDOMINIAL
-  MULTA
-  RESERVA_AREA
-}
-
-enum StatusDespesa {
-  PENDENTE
-  PAGO
-}
-

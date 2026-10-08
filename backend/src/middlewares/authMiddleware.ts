@@ -3,6 +3,8 @@ import jwt from 'jsonwebtoken';
 
 interface AuthRequest extends Request {
   userId?: string;
+  condominiosIds?: string[];
+  userRole?: string;
 }
 
 export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
@@ -32,6 +34,8 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
     }
 
     req.userId = decoded.id;
+    req.condominiosIds = decoded.condominiosIds || [];
+    req.userRole = decoded.role;
     return next();
   });
 }

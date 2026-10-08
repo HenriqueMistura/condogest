@@ -8,7 +8,6 @@ const __dirname = path.dirname(__filename);
 
 const prisma = new PrismaClient();
 
-// Função auxiliar para gerar um CPF fictício sequencial
 function gerarCpfFicticio(index: number) {
   const num = index.toString().padStart(9, '0');
   return `${num.substring(0,3)}.${num.substring(3,6)}.${num.substring(6,9)}-00`;
@@ -16,6 +15,12 @@ function gerarCpfFicticio(index: number) {
 
 async function importar() {
   console.log('Iniciando importação de moradores...');
+
+  const condominio = await prisma.condominio.findFirst({ where: { nome: 'Condomínio Niko Baracati' } });
+  if (!condominio) {
+    console.error('❌ Condomínio Niko Baracati não encontrado. Rode o seed_admin primeiro!');
+    process.exit(1);
+  }
 
   const filePath = path.join(__dirname, 'moradores.txt');
   const text = fs.readFileSync(filePath, 'utf-8');
@@ -27,8 +32,6 @@ async function importar() {
     const line = lines[i].trim();
     if (!line) continue;
 
-    // Regex para pegar NOME, BLOCO e APARTAMENTO
-    // Ex: PARCELAMENTO LUSINETE DA SILVA COSTA HENNIS BL A AP 11 N BARACAT 2
     const regex = /PARCELAMENTO\s+(.*?)\s+BL\s+([A-Z])\s+AP\s+(\d+)\s+N\s+BARACAT\s+2/i;
     const match = line.match(regex);
 
@@ -38,28 +41,25 @@ async function importar() {
       const numero = match[3].trim();
 
       try {
-        // 1. Cria a unidade (se não existir)
-        let unidade = await prisma.unidade.findUnique({
+        let unidade = await prisma.unidade.findFirst({
           where: {
-            bloco_numero: {
-              bloco,
-              numero
-            }
+            condominioId: condominio.id,
+            bloco,
+            numero
           }
         });
 
         if (!unidade) {
           unidade = await prisma.unidade.create({
-            data: { bloco, numero, status: 'OCUPADO' }
+            data: { condominioId: condominio.id, bloco, numero, status: 'OCUPADO' }
           });
         }
 
-        // 2. Cria o morador (gera um CPF falso sequencial para não quebrar a regra de @unique)
-        // O síndico poderá atualizar isso depois no sistema.
         const cpfFicticio = gerarCpfFicticio(i + 1);
 
         await prisma.morador.create({
           data: {
+            condominioId: condominio.id,
             nome,
             cpf: cpfFicticio,
             unidadeId: unidade.id,
@@ -72,8 +72,6 @@ async function importar() {
       } catch (err: any) {
         console.error(`❌ Erro ao importar a linha: ${line} ->`, err.message);
       }
-    } else {
-      console.warn(`⚠️ Linha não reconhecida (ignorada): ${line}`);
     }
   }
 

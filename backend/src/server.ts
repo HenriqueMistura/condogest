@@ -7,6 +7,7 @@ import receitasRoutes from './routes/receitas.routes.js';
 import despesasRoutes from './routes/despesas.routes.js';
 import webhooksRoutes from './routes/webhooks.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
+import condominiosRoutes from './routes/condominios.routes.js';
 import { authRoutes } from './routes/auth.routes.js';
 import { authMiddleware } from './middlewares/authMiddleware.js';
 import { startCronJobs } from './jobs/index.js';
@@ -22,6 +23,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/webhooks', webhooksRoutes);
 
 // Rotas privadas (protegidas pelo middleware)
+app.use('/api/condominios', authMiddleware, condominiosRoutes);
 app.use('/api/unidades', authMiddleware, unidadesRoutes);
 app.use('/api/moradores', authMiddleware, moradoresRoutes);
 app.use('/api/receitas', authMiddleware, receitasRoutes);

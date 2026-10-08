@@ -8,9 +8,11 @@ const unidadeSchema = z.object({
   status: z.enum(['OCUPADO', 'VAZIO']).optional(),
 });
 
-export async function list(req: Request, res: Response, next: NextFunction) {
+export async function list(req: any, res: Response, next: NextFunction) {
   try {
+    if (!req.condominiosIds || req.condominiosIds.length === 0) return res.status(403).json({ error: 'Nenhum condominio vinculado' });
     const unidades = await prisma.unidade.findMany({
+      where: { condominioId: { in: req.condominiosIds } },
       include: {
         moradores: true,
       }
@@ -21,10 +23,11 @@ export async function list(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-export async function get(req: Request, res: Response, next: NextFunction) {
+export async function get(req: any, res: Response, next: NextFunction) {
   try {
-    const unidade = await prisma.unidade.findUnique({
-      where: { id: req.params.id },
+    if (!req.condominiosIds || req.condominiosIds.length === 0) return res.status(403).json({ error: 'Nenhum condominio vinculado' });
+    const unidade = await prisma.unidade.findFirst({
+      where: { id: req.params.id, condominioId: { in: req.condominiosIds } },
       include: { moradores: true }
     });
     if (!unidade) {
@@ -36,19 +39,29 @@ export async function get(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-export async function create(req: Request, res: Response, next: NextFunction) {
+export async function create(req: any, res: Response, next: NextFunction) {
   try {
+    if (!req.condominiosIds || req.condominiosIds.length === 0) return res.status(403).json({ error: 'Nenhum condominio vinculado' });
+    const { condominioId } = req.body;
+    if (!condominioId || !req.condominiosIds.includes(condominioId)) {
+      return res.status(403).json({ error: 'Condominio inválido ou não autorizado' });
+    }
     const data = unidadeSchema.parse(req.body);
-    const unidade = await prisma.unidade.create({ data });
+    const unidade = await prisma.unidade.create({ data: { ...data, condominioId } });
     res.status(201).json(unidade);
   } catch (error) {
     next(error);
   }
 }
 
-export async function update(req: Request, res: Response, next: NextFunction) {
+export async function update(req: any, res: Response, next: NextFunction) {
   try {
+    if (!req.condominiosIds || req.condominiosIds.length === 0) return res.status(403).json({ error: 'Nenhum condominio vinculado' });
     const data = unidadeSchema.partial().parse(req.body);
+    
+    const existing = await prisma.unidade.findFirst({ where: { id: req.params.id, condominioId: { in: req.condominiosIds } } });
+    if (!existing) return res.status(404).json({ error: 'Unidade não encontrada' });
+
     const unidade = await prisma.unidade.update({
       where: { id: req.params.id },
       data
@@ -59,8 +72,12 @@ export async function update(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-export async function remove(req: Request, res: Response, next: NextFunction) {
+export async function remove(req: any, res: Response, next: NextFunction) {
   try {
+    if (!req.condominiosIds || req.condominiosIds.length === 0) return res.status(403).json({ error: 'Nenhum condominio vinculado' });
+    const existing = await prisma.unidade.findFirst({ where: { id: req.params.id, condominioId: { in: req.condominiosIds } } });
+    if (!existing) return res.status(404).json({ error: 'Unidade não encontrada' });
+    
     await prisma.unidade.delete({ where: { id: req.params.id } });
     res.status(204).send();
   } catch (error) {

@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { MainLayout } from './components/layout/MainLayout';
 import { Dashboard } from './pages/Dashboard';
+import { SuperAdminDashboard } from './pages/SuperAdminDashboard';
 import { Unidades } from './pages/Unidades';
 import { Moradores } from './pages/Moradores';
 import { Receitas } from './pages/Receitas';
@@ -18,13 +19,16 @@ function PrivateRoute() {
 }
 
 function AppRoutes() {
+  const { usuario } = useAuth();
+  const isSuperAdmin = usuario?.role === 'SUPER_ADMIN';
+
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       
       <Route element={<PrivateRoute />}>
         <Route path="/" element={<MainLayout />}>
-          <Route index element={<Dashboard />} />
+          <Route index element={isSuperAdmin ? <SuperAdminDashboard /> : <Dashboard />} />
           <Route path="unidades" element={<Unidades />} />
           <Route path="moradores" element={<Moradores />} />
           <Route path="receitas" element={<Receitas />} />

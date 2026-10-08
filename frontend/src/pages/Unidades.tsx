@@ -4,11 +4,13 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { Plus } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import { Unidade } from '../types';
+import { CondominioTag } from '../components/ui/CondominioTag';
 
 export function Unidades() {
   const { data: unidades, loading, error } = useApi<Unidade[]>('/unidades');
 
   const columns: Column<Unidade>[] = [
+    { key: 'etapa', title: 'Etapa', render: (item) => <CondominioTag condominioId={item.condominioId} /> },
     { key: 'bloco', title: 'Bloco', render: (item) => <span className="font-semibold text-slate-700">{item.bloco}</span> },
     { key: 'numero', title: 'Número' },
     { key: 'status', title: 'Status', render: (item) => <StatusBadge status={item.status as any} /> },

@@ -1,6 +1,6 @@
 import { prisma } from '../lib/prisma.js';
 
-export async function getDashboardData() {
+export async function getDashboardData(condominioId: string) {
   const hoje = new Date();
   const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
   const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
@@ -8,6 +8,7 @@ export async function getDashboardData() {
   // Calcula receita prevista (todas do mês)
   const todasReceitasMes = await prisma.receita.findMany({
     where: {
+      condominioId,
       dataVencimento: {
         gte: inicioMes,
         lte: fimMes,
@@ -24,6 +25,7 @@ export async function getDashboardData() {
   // Calcula despesas do mês
   const despesasMesData = await prisma.despesa.findMany({
     where: {
+      condominioId,
       dataVencimento: {
         gte: inicioMes,
         lte: fimMes,
@@ -37,15 +39,16 @@ export async function getDashboardData() {
   const saldo = receitaArrecadada - despesasMes;
 
   // Taxa de inadimplência geral
-  const totalReceitas = await prisma.receita.count();
+  const totalReceitas = await prisma.receita.count({ where: { condominioId } });
   const totalAtrasadas = await prisma.receita.count({
-    where: { status: 'ATRASADO' }
+    where: { status: 'ATRASADO', condominioId }
   });
   
   const taxaInadimplencia = totalReceitas > 0 ? (totalAtrasadas / totalReceitas) * 100 : 0;
 
   // Últimas 10 transações (receitas)
   const ultimasTransacoes = await prisma.receita.findMany({
+    where: { condominioId },
     take: 10,
     orderBy: {
       updatedAt: 'desc',
@@ -60,11 +63,11 @@ export async function getDashboardData() {
   });
 
   // Contagens para o Gauge
-  const totalUnidades = await prisma.unidade.count();
+  const totalUnidades = await prisma.unidade.count({ where: { condominioId } });
   
   // Total inadimplentes (distinct moradorId com receitas ATRASADO)
   const inadimplentesResult = await prisma.receita.findMany({
-    where: { status: 'ATRASADO' },
+    where: { status: 'ATRASADO', condominioId },
     select: { moradorId: true },
     distinct: ['moradorId'],
   });

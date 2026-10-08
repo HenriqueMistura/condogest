@@ -14,6 +14,7 @@ export function Inadimplentes() {
       .filter((r) => r.status === 'ATRASADO' || r.status === 'PENDENTE' && new Date(r.dataVencimento) < new Date())
       .map((r) => ({
         id: r.id,
+        condominioId: r.condominioId,
         moradorNome: r.morador?.nome || 'Desconhecido',
         unidade: r.morador?.unidade ? `${r.morador.unidade.bloco}-${r.morador.unidade.numero}` : '-',
         cpf: r.morador?.cpf || '-',

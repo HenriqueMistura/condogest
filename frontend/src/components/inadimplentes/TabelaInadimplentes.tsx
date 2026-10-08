@@ -1,9 +1,11 @@
 import React from 'react';
 import { DataTable, Column } from '../ui/DataTable';
 import { BotaoReenvio } from './BotaoReenvio';
+import { CondominioTag } from '../ui/CondominioTag';
 
 interface Inadimplente {
   id: string;
+  condominioId: string;
   moradorNome: string;
   unidade: string;
   cpf: string;
@@ -32,6 +34,11 @@ export function TabelaInadimplentes({ data }: TabelaInadimplentesProps) {
   const totalValorOriginal = data.reduce((acc, curr) => acc + curr.valorOriginal, 0);
 
   const columns: Column<Inadimplente>[] = [
+    {
+      key: 'etapa',
+      title: 'Etapa',
+      render: (item) => <CondominioTag condominioId={item.condominioId} />,
+    },
     {
       key: 'morador',
       title: 'Morador',

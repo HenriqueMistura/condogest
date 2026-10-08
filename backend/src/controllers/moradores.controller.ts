@@ -11,9 +11,11 @@ const moradorSchema = z.object({
   ativo: z.boolean().optional(),
 });
 
-export async function list(req: Request, res: Response, next: NextFunction) {
+export async function list(req: any, res: Response, next: NextFunction) {
   try {
+    if (!req.condominiosIds || req.condominiosIds.length === 0) return res.status(403).json({ error: 'Nenhum condominio vinculado' });
     const moradores = await prisma.morador.findMany({
+      where: { condominioId: { in: req.condominiosIds } },
       include: {
         unidade: true,
       }
@@ -24,10 +26,11 @@ export async function list(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-export async function get(req: Request, res: Response, next: NextFunction) {
+export async function get(req: any, res: Response, next: NextFunction) {
   try {
-    const morador = await prisma.morador.findUnique({
-      where: { id: req.params.id },
+    if (!req.condominiosIds || req.condominiosIds.length === 0) return res.status(403).json({ error: 'Nenhum condominio vinculado' });
+    const morador = await prisma.morador.findFirst({
+      where: { id: req.params.id, condominioId: { in: req.condominiosIds } },
       include: { unidade: true }
     });
     if (!morador) {
@@ -39,19 +42,30 @@ export async function get(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-export async function create(req: Request, res: Response, next: NextFunction) {
+export async function create(req: any, res: Response, next: NextFunction) {
   try {
+    if (!req.condominiosIds || req.condominiosIds.length === 0) return res.status(403).json({ error: 'Nenhum condominio vinculado' });
+    const { condominioId } = req.body;
+    if (!condominioId || !req.condominiosIds.includes(condominioId)) {
+      return res.status(403).json({ error: 'Condominio inválido ou não autorizado' });
+    }
     const data = moradorSchema.parse(req.body);
-    const morador = await prisma.morador.create({ data });
+    const morador = await prisma.morador.create({ data: { ...data, condominioId } });
     res.status(201).json(morador);
   } catch (error) {
     next(error);
   }
 }
 
-export async function update(req: Request, res: Response, next: NextFunction) {
+export async function update(req: any, res: Response, next: NextFunction) {
   try {
+    if (!req.condominiosIds || req.condominiosIds.length === 0) return res.status(403).json({ error: 'Nenhum condominio vinculado' });
     const data = moradorSchema.partial().parse(req.body);
+    
+    // First find if it exists and user has access
+    const existing = await prisma.morador.findFirst({ where: { id: req.params.id, condominioId: { in: req.condominiosIds } } });
+    if (!existing) return res.status(404).json({ error: 'Morador não encontrado' });
+    
     const morador = await prisma.morador.update({
       where: { id: req.params.id },
       data
@@ -62,8 +76,12 @@ export async function update(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-export async function remove(req: Request, res: Response, next: NextFunction) {
+export async function remove(req: any, res: Response, next: NextFunction) {
   try {
+    if (!req.condominiosIds || req.condominiosIds.length === 0) return res.status(403).json({ error: 'Nenhum condominio vinculado' });
+    const existing = await prisma.morador.findFirst({ where: { id: req.params.id, condominioId: { in: req.condominiosIds } } });
+    if (!existing) return res.status(404).json({ error: 'Morador não encontrado' });
+    
     await prisma.morador.delete({ where: { id: req.params.id } });
     res.status(204).send();
   } catch (error) {
